@@ -1,0 +1,370 @@
+<html>
+<head>
+<title>Electricity Bill Calculator</title>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+
+<script>
+    $(function() {
+    	// set date format
+        $("#previous_date, #current_date").datepicker({ dateFormat: "yy-mm-dd" });
+        
+        // hide panes at startup
+       	hide_panes();
+       	
+        // analysis object to be used in detailed view
+		analysis = new Array();
+		analysis_limits = new Array();
+	
+		// hide results at change to any field
+		$("#previous_date,#previous_reading,#current_date,#current_reading").keydown(function(){
+			hide_panes();
+		});
+		$("#previous_date,#previous_reading,#current_date,#current_reading").change(function(){
+			hide_panes();
+		});
+		
+        $("#calculate").click(function(){
+			hide_panes();
+        
+        	// assign to variables
+        	var cat = $("#category").val();
+        	var p_date = parseInt($("#previous_date").val());
+        	var p_reading = $("#previous_reading").val();
+        	var c_date = $("#current_date").val();
+        	var c_reading = parseInt($("#current_reading").val());
+
+			var errors = "";
+        	
+        	// check for empty dates
+        	if(p_date == ""){
+        		errors += error("Previous metering date is empty", new Array("#previous_date"));
+        	}
+        	if(c_date == ""){
+        		errors += error("Current metering date is empty", new Array("#current_date"));
+        	}
+        	
+        	// check for numeric inputs of the readings
+			if(isNaN(p_reading /1 ) == true || p_reading == "") {
+    			errors += error("Previous meter reading should be a number", new Array("#previous_reading"));
+			}
+			if(isNaN(c_reading /1 ) == true || c_reading == ""){
+			    errors += error("Current meter reading should be a number", new Array("#current_reading"));
+			}
+
+        	// check for current date less than previous date
+			p_date = $("#previous_date").datepicker("getDate");
+        	c_date = $("#current_date").datepicker("getDate");
+        	if(p_date>=c_date){
+        		errors += error("Current date should be later than the previous date", new Array("#previous_date","#current_date"));
+        	}
+        	
+        	// check for current meter reading less than previous meter reading
+        	if(p_reading > c_reading){
+        		errors += error("Current meter reading is less than the previous meter reading", new Array("#previous_reading", "#current_reading"));
+        	}
+        	
+			if(errors != ""){ // if there are errors
+				$("#error-desc").html("<ul>" + errors + "</ul>");
+				$("#error").slideDown("slow", function(){});
+				return;        	
+        	}
+        	else{
+        		if(cat == "domestic"){
+        			var d_units = new Array(1,2,3,4,5,6,7); // domestic units with 30 blocks
+					var d_charges = new Array(3, 4.7, 7.5, 21, 24, 24, 36); // charges for each block
+					var d_fc = new Array(30, 60, 90, 315);
+					var d_fac = new Array(0.25, 0.35, 0.40);        		
+        		}
+        		else{ // religious
+					var d_units = new Array(1,2,3,4,5,6,7); // domestic units with 30 blocks
+					var d_charges = new Array(1.90, 2.80, 2.80, 6.75, 7.50, 7.50, 9.40); // charges for each block
+					var d_fc = new Array(30, 60, 60, 180, 180, 180, 240);
+					var d_fac = new Array(0);        		
+        		}
+
+				var nou = 0;
+				var nod = 0;
+				var uc = 0;
+	    	    var fac = 0;
+    	    	var fc = 0;
+        		
+	        	// calculate and show the summary
+    	    	var nod = (c_date - p_date)/(24*60*60*1000);
+        		var nou = c_reading - p_reading;
+        		
+				// uc calculation
+				var nou_temp = nou;
+				var i = 1;
+				while(nou_temp>0){
+				
+					// for analysis
+					unit_block = new Object();
+					unit_block.start = nou-nou_temp;
+					unit_block.charges = uc;
+					unit_block.unit_cost = d_charges[i-1];
+					analysis.push(unit_block);
+									
+					if(i == d_charges.length){
+						uc += nou_temp * d_charges[i-1];
+						break;
+					}
+						
+					if(nou_temp >= nod){
+						uc += nod*d_charges[i-1];
+						nou_temp -= nod;
+					}
+					else{
+						uc += nou_temp * d_charges[i-1];
+						break;
+					}
+						
+					i++;
+				}
+					
+				// fac calculation
+				for(var i=0; i<d_fac.length; i++){
+					if(nou<=(nod*d_units[i])){
+						fac = uc * d_fac[i];
+						break;
+					}
+					if(i == d_fac.length-1){
+						fac = uc * d_fac[d_fac.length-1];
+					}
+				}
+					
+				// fc calculation
+				for(var i=0; i<d_fc.length; i++){
+					if(nou<=(nod*d_units[i])){
+						fc = d_fc[i];
+						break;
+					}
+					if(i == d_fc.length-1){
+						fc = d_fc[d_fc.length-1];
+					}
+				}
+
+				var tc = uc + fac + fc;        		
+        		
+        		$("#nod").html(nod);
+	        	$("#nou").html(addCommas(nou));
+	        	$("#uc").html(addCommas(uc.toFixed(2)));
+	        	$("#fac").html(addCommas(fac.toFixed(2)));
+	        	$("#fc").html(addCommas(fc.toFixed(2)));
+	        	$("#tc").html("<b>" + addCommas(tc.toFixed(2)) + "</b>");
+    			$("#summary").slideDown("slow", function(){});
+    			analysis_limits.push(nou)
+    			analysis_limits.push(uc);
+    		}
+       	});
+
+		$("#reset").click(function(){
+			// reset and hide results
+			$("#category").val("Domestic");
+			$("#previous_date").val("");
+			$("#previous_reading").val("");
+			$("#current_date").val("");
+			$("#current_reading").val("");
+			hide_panes();
+		});
+       
+		function error(error_msg, element){
+			for(var i=0; i<element.length; i++){
+				$(element[i]).css("background-color", "#FF3030");
+			}
+			return "<li>" + error_msg + "</li>";
+		}
+		
+		function hide_panes(){
+			$("#summary").hide();
+        	$("#detailed").hide();
+        	$("#error").hide();
+        	
+        	// clear errors
+        	var elements = new Array("#previous_date", "#current_date", "#previous_reading", "#current_reading");
+        	for(var i=0; i<elements.length; i++){
+        		$(elements[i]).css("background-color", "#FFFFFF");
+        	}
+        	
+        	// initialize variables
+        	nou = 0;
+			nod = 0;
+			uc = 0;
+        	fac = 0;
+        	fc = 0;
+        	analysis = new Array();
+        	analysis_limits = new Array();
+		}
+		
+		// thousand separator
+		function addCommas(n){
+    		var rx=  /(\d+)(\d{3})/;
+		    return String(n).replace(/\d+/, function(w){
+	        	while(rx.test(w)){
+    	        	w= w.replace(rx, '$1,$2');
+        		}
+        		return w;
+    		});
+		}
+
+		$("#analyse").click(function(){
+			var ana = "<tr><td align=center><b>UNIT BLOCK</b></td><td align=center><b>UNIT CHARGE</b></td><td align=center><b>TOTAL UNIT BLOCK CHARGE</b></td></tr>";
+			var unit = "";
+			var charges = 0;
+			var unit_upper = 0;
+			var charges_lower = 0;
+			var charges_chart = new Array();
+			var max_charge = 0;
+			
+			for(var i=0; i< analysis.length; i++){
+				if(i == (analysis.length-1)){
+					unit_upper = analysis_limits[0];
+					charges_upper = analysis_limits[1];
+				}else{
+					unit_upper = analysis[i+1].start;
+					charges_upper = analysis[i+1].charges;
+				}
+				unit = (analysis[i].start+1) + " - " + unit_upper;
+				charges = charges_upper - analysis[i].charges;
+				charges_chart.push(charges);
+				if(charges>max_charge){
+					max_charge = charges;
+				}
+				ana += "<tr><td align=center>" + unit + "</td><td align=center>" + analysis[i].unit_cost.toFixed(2) + "</td><td><div style=width:0; align=left id=c_chart_" + i + ">"  + addCommas(charges.toFixed(2)) + "</div></td></tr>";
+			}
+			$("#detailed-des").html("<table width=100%>" + ana + "</table>");
+			$("#detailed").slideDown("slow", function(){
+				
+				for(var i=0; i<charges_chart.length; i++){
+					$("#c_chart_" + i).animate({
+						backgroundColor: "#FF5721",
+						width: (charges_chart[i]/max_charge)*100 + "%",
+//						textAlign: ,
+						color: "#000000"
+					}, 1000);
+				}
+			});
+		});
+    });
+    
+    
+</script>
+
+<style>
+#summary{
+	width: 400px;
+}
+
+#summary-title{
+	color: green;
+	text-align: center;
+	background-color: #C5C1AA;
+	font-weight: bold;
+}
+
+#error{
+	width: 400px;
+}
+
+#error-title{
+	color: red;
+	text-align: center;
+	background-color: #C5C1AA;
+	font-weight: bold;
+}
+
+#error-desc{
+	#color: red;
+}
+#detailed{
+	width: 400px;
+}
+
+#c_chart*{
+	background-color: red;
+}
+</style>
+
+</head>
+<body>
+<table width=400px>
+	<tr>
+		<td>Tariff Category:</td>
+		<td align="right"><select id="category">
+			<option value="domestic">Domestic</option>
+			<option value="religious">Religious</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td>Previous metering date:</td>
+		<td align="right"><input type="text" id="previous_date" value="" readonly="" size="9" /></td>
+	</tr>
+	<tr>
+		<td>Previous meter reading:</td>
+		<td align="right"><input type="text" id="previous_reading" value="" size="9" /></td>
+	</tr>
+	<tr>
+		<td>Current metering date:</td>
+		<td align="right"><input type="text" id="current_date" value="" readonly="" size="9" /></td>
+	</tr>
+	<tr>
+		<td>Current meter reading:</td>
+		<td align="right"><input type="text" id="current_reading" value="" size="9" /></td>
+	</tr>
+	<tr>
+		<td><button id="calculate">Calculate</button>
+		<button id="reset">Reset</button></td>
+	</tr>
+</table>
+
+<br/>
+<div id="error" style="display: None">
+	<div id="error-title">
+	ERROR
+	</div>
+	<div id="error-desc"></div>
+</div>
+
+<div id="summary" style="display: None">
+	<div id="summary-title">MONTHLY BILL CALCULATION</div>
+	<br/>
+	<table width=400px>
+		<tr>
+			<td>No. of days:</td>
+			<td align="right"><div id="nod"></div></td>
+		</tr>
+		<tr>
+			<td>No. of units (kWh):</td>
+			<td align="right"><div id="nou"></div></td>
+		</tr>
+		<tr>
+			<td>Usage charges (LKR):</td>
+			<td align="right"><div id="uc"></div></td>
+		</tr>
+		<tr>
+			<td>Fuel adjustment charges (LKR):</td>
+			<td align="right"><div id="fac"></div></td>
+		</tr>
+		<tr>
+			<td>Fixed charge (LKR):</td>
+			<td align="right"><div id="fc"></div></td>
+		</tr>
+		<tr>
+			<td><b>Total charges for the month (LKR):</b></td>
+			<td align="right"><div id="tc"></div></td>
+		</tr>
+	</table>
+	<br/>
+	<button id="analyse">Analyse usage charges</button>
+</div>
+
+<br/>
+<div id="detailed" style="display: None">
+	<div id="summary-title">ANALYSIS ON USAGE CHARGES</div>
+	<br/>
+	<div id="detailed-des"></div>
+</div>
+</body>
+</html>
