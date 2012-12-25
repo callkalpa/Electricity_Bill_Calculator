@@ -17,12 +17,16 @@
         // analysis object to be used in detailed view
 		analysis = new Array();
 		analysis_limits = new Array();
+		
+		// forecasting parameter
+		var forecast = false;
 	
 		// hide results at change to any field
-		$("#previous_date,#previous_reading,#current_date,#current_reading").keydown(function(){
+/*		$("#previous_date,#previous_reading,#current_date,#current_reading,#forecast").keydown(function(){
 			hide_panes();
 		});
-		$("#previous_date,#previous_reading,#current_date,#current_reading").change(function(){
+*/
+		$("#category, #previous_date,#previous_reading,#current_date,#current_reading,#forecast").change(function(){
 			hide_panes();
 		});
 		
@@ -35,6 +39,7 @@
         	var p_reading = $("#previous_reading").val();
         	var c_date = $("#current_date").val();
         	var c_reading = parseInt($("#current_reading").val());
+        	var c_date_label = $("#current_date_label").html();
 
 			var errors = "";
         	
@@ -43,7 +48,7 @@
         		errors += error("Previous metering date is empty", new Array("#previous_date"));
         	}
         	if(c_date == ""){
-        		errors += error("Current metering date is empty", new Array("#current_date"));
+        		errors += error(c_date_label.substring(0, c_date_label.length-1) + " is empty", new Array("#current_date"));
         	}
         	
         	// check for numeric inputs of the readings
@@ -92,8 +97,14 @@
     	    	var fc = 0;
         		
 	        	// calculate and show the summary
-    	    	var nod = (c_date - p_date)/(24*60*60*1000);
-        		var nou = c_reading - p_reading;
+    	    	nod = (c_date - p_date)/(24*60*60*1000);
+				nou = c_reading - p_reading;
+				
+				
+				if(forecast){
+					nou = get_forecast_nou(p_date, c_date, nou, nod);
+				}
+    		
         		
 				// uc calculation
 				var nou_temp = nou;
@@ -167,6 +178,7 @@
 			$("#previous_reading").val("");
 			$("#current_date").val("");
 			$("#current_reading").val("");
+			$("#forecast").attr("checked", false);
 			hide_panes();
 		});
        
@@ -209,6 +221,36 @@
     		});
 		}
 
+		$("#forecast").change(function(){
+			check_forecast();
+		});
+		
+		$("#forecase").ready(function(){
+			check_forecast();
+		});
+		
+		// change metering date value based on check box status
+		function check_forecast(){
+			if($("#forecast").attr("checked")){
+				forecast = true;
+				$("#current_date_label").html("Expected metering date:");
+				$("#summary-title").html("FORECASTED ELECTRICITY BILL CALCULATION");
+			}
+			else{
+				forecast = false;
+				$("#current_date_label").html("Current metering date:");
+				$("#summary-title").html("ELECTRICITY BILL CALCULATION");
+			}
+		}
+
+		// return forcast no. of units
+		function get_forecast_nou(p_date, c_date, nou, nod){
+			var now = new Date();
+			var average_consumption = nou/((now-p_date)/(24*60*60*1000));
+			var forecast_nou = (c_date-p_date)/(24*60*60*1000)*average_consumption;
+			return Math.ceil(forecast_nou);
+		}		
+		
 		$("#analyse").click(function(){
 			var ana = "<tr><td align=center><b>UNIT BLOCK</b></td><td align=center><b>UNIT CHARGE</b></td><td align=center><b>TOTAL UNIT BLOCK CHARGE</b></td></tr>";
 			var unit = "";
@@ -307,7 +349,11 @@
 		<td align="right"><input type="text" id="previous_reading" value="" size="9" /></td>
 	</tr>
 	<tr>
-		<td>Current metering date:</td>
+		<td></td>
+		<td align="right"><input type="checkbox" id="forecast" value="" />Forecast</td>
+	</tr>
+	<tr>
+		<td><div id="current_date_label">Current metering date:</div></td>
 		<td align="right"><input type="text" id="current_date" value="" readonly="" size="9" /></td>
 	</tr>
 	<tr>
@@ -329,7 +375,7 @@
 </div>
 
 <div id="summary" style="display: None">
-	<div id="summary-title">MONTHLY BILL CALCULATION</div>
+	<div id="summary-title">ELECTRICITY BILL CALCULATION</div>
 	<br/>
 	<table width=400px>
 		<tr>
