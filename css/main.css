@@ -1,0 +1,32 @@
+#summary{
+	width: 400px;
+}
+
+#summary-title{
+	color: green;
+	text-align: center;
+	background-color: #C5C1AA;
+	font-weight: bold;
+}
+
+#error{
+	width: 400px;
+}
+
+#error-title{
+	color: red;
+	text-align: center;
+	background-color: #C5C1AA;
+	font-weight: bold;
+}
+
+#error-desc{
+	#color: red;
+}
+#detailed{
+	width: 400px;
+}
+
+#c_chart*{
+	background-color: red;
+}

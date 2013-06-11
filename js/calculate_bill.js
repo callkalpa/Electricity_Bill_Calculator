@@ -75,7 +75,6 @@ function calculate_bill(cat, c_date, p_date, c_reading, p_reading, forecast){
   	}
   
 	charges.tot = charges.uc + charges.fac + charges.fc;
-	console.log(analysis);
 	return charges;
 
 }
