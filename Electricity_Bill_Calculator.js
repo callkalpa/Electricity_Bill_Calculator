@@ -1,4 +1,4 @@
-    $(function() {
+    $(document).ready(function() {
     	// set date format
         $("#previous_date, #current_date").datepicker({ dateFormat: "yy-mm-dd" });
         
@@ -74,13 +74,9 @@
         		$("#nod").html(charges_temp.nod);
 	        	$("#nou").html(addCommas(charges_temp.nou));
 	        	$("#uc").html(addCommas(charges_temp.uc.toFixed(2)));
-	        	$("#uc_new").html(addCommas(charges_temp.new_uc.toFixed(2)));
 	        	$("#fac").html(addCommas(charges_temp.fac.toFixed(2)));
-	        	$("#fac_new").html(addCommas(charges_temp.new_fac.toFixed(2)));
 	        	$("#fc").html(addCommas(charges_temp.fc.toFixed(2)));
-	        	$("#fc_new").html(addCommas(charges_temp.new_fc.toFixed(2)));
-	        	$("#tc").html("<b>" + addCommas(charges_temp.tc.toFixed(2)) + "</b>");
-	        	$("#tc_new").html("<b>" + addCommas(charges_temp.new_tc.toFixed(2)) + "</b>");
+	        	$("#tc").html("<b>" + addCommas(charges_temp.tot.toFixed(2)) + "</b>");
     			$("#summary").slideDown("slow", function(){});
     			analysis_limits.push(charges_temp.nou)
     			analysis_limits.push(charges_temp.uc);
@@ -172,13 +168,11 @@
 			for(var i=0; i< analysis.length; i++){
 				if(i == (analysis.length-1)){
 					unit_upper = analysis_limits[0];
-					charges_upper = analysis_limits[1];
 				}else{
 					unit_upper = analysis[i+1].start;
-					charges_upper = analysis[i+1].charges;
 				}
 				unit = (analysis[i].start+1) + " - " + unit_upper;
-				charges = charges_upper - analysis[i].charges;
+				charges = analysis[i].charges;
 				charges_chart.push(charges);
 				if(charges>max_charge){
 					max_charge = charges;
