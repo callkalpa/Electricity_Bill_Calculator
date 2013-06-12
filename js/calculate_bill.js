@@ -23,7 +23,7 @@ function calculate_bill(cat, c_date, p_date, c_reading, p_reading, forecast){
 	var data = new Array(); // to hold values for blocks
 			
 	if(cat == "domestic"){
-		if(charges.nou < charges.nod * 2){ // below 60 units
+		if(charges.nou <= charges.nod * 2){ // below 60 units
 			data.push({slot:1, ec : 3.00, fc : 30, fac : 0.25}); // 0-30
 			data.push({slot:1, ec : 4.70, fc : 60, fac : 0.35}); // 31-60
 		}
