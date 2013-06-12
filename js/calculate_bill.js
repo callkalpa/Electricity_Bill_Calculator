@@ -69,7 +69,7 @@ function calculate_bill(cat, c_date, p_date, c_reading, p_reading, forecast){
   	if(nou_temp != 0){
 		increment = nou_temp * data[data.length - 1].ec;
     		charges.uc += increment;
-		charges.fac = data[data.length-1].fac;
+		charges.fac = charges.uc * data[data.length-1].fac;
     		charges.fc = data[data.length-1].fc;
 		feed_analyse(charges.nou, nou_temp, increment, data[data.length-1].ec);
   	}
