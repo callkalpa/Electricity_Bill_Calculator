@@ -70,7 +70,15 @@
         	else{
         		
         		var charges_temp = calculate_bill(cat, c_date, p_date, c_reading, p_reading, forecast);
-        		
+        	
+			// if it is a forecast, change the label to expected forecast
+			if(forecast){
+				$("#nou_label").html("No. of units consumed - expected (kWh):");
+			}
+			else{
+				$("#nou_label").html("No. of units consumed (kWh):");
+			}
+
         		$("#nod").html(charges_temp.nod);
 	        	$("#nou").html(addCommas(charges_temp.nou));
 	        	$("#uc").html(addCommas(charges_temp.uc.toFixed(2)));
